@@ -15,8 +15,7 @@
 
 bool pedestrianRequest = false;
 
-void setup()
-{
+void setup() {
     Serial.begin(115200);
 
     // Configure pins
@@ -24,7 +23,7 @@ void setup()
     pinMode(LED_YELLOW, OUTPUT);
     pinMode(LED_RED, OUTPUT);
     pinMode(BUZZER, OUTPUT);
-    pinMode(TOUCH_BUTTON, INPUT_PULLUP); // Internal pull-up
+    pinMode(TOUCH_BUTTON, INPUT_PULLUP); // Use internal pull-up
 
     // Ensure LEDs start off
     digitalWrite(LED_GREEN, LOW);
@@ -37,7 +36,7 @@ void setup()
 
     Serial.println("Initializing system...");
 
-    // Required startup sequence: Red -> Red-Yellow -> Green
+    // Startup sequence: Red -> Red-Yellow -> Green
     Serial.println("RED light ON (10s)...");
     digitalWrite(LED_RED, HIGH);
     delay(10000);
@@ -52,22 +51,30 @@ void setup()
     digitalWrite(LED_GREEN, HIGH);
 }
 
-void loop()
-{
+void loop() {
     Serial.println("GREEN light active. Waiting for pedestrian...");
-    unsigned long startTime = millis();
+    bool buttonActivated = false;
+    unsigned long buttonPressTime = 0;
 
-    while ((millis() - startTime < 5000) || digitalRead(TOUCH_BUTTON) == LOW)
-    {
+    // En estado verde, se repite el patrón del buzzer
+    // Se queda en verde indefinidamente hasta que se presione el botón.
+    // Una vez presionado, se espera al menos 5 segundos antes de cambiar de estado.
+    while (true) {
+        // Buzzer pattern for green: 500ms on, 1500ms off
         ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_GREEN);
         delay(500);
         ledcWriteTone(BUZZER_CHANNEL, 0);
         delay(1500);
 
-        if (digitalRead(TOUCH_BUTTON) == LOW)
-        {
-            pedestrianRequest = true;
+        // Check if button is pressed (active low)
+        if (!buttonActivated && digitalRead(TOUCH_BUTTON) == LOW) {
+            buttonActivated = true;
+            buttonPressTime = millis();
             Serial.println("Pedestrian button pressed!");
+        }
+
+        // If button has been pressed, and 5 seconds have passed since then, exit loop
+        if (buttonActivated && (millis() - buttonPressTime >= 5000)) {
             break;
         }
     }
@@ -82,10 +89,10 @@ void loop()
     Serial.println("Switching to RED...");
     digitalWrite(LED_YELLOW, LOW);
     digitalWrite(LED_RED, HIGH);
-    startTime = millis();
+    unsigned long redStartTime = millis();
 
-    while (millis() - startTime < 10000)
-    {
+    // Buzzer pattern for red: 250ms on, 250ms off for 10 seconds
+    while (millis() - redStartTime < 10000) {
         ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_RED);
         delay(250);
         ledcWriteTone(BUZZER_CHANNEL, 0);
@@ -102,4 +109,7 @@ void loop()
     digitalWrite(LED_RED, LOW);
     digitalWrite(LED_YELLOW, LOW);
     digitalWrite(LED_GREEN, HIGH);
+
+    // Reset pedestrian request for next cycle
+    pedestrianRequest = false;
 }
