@@ -5,7 +5,7 @@
 #define LED_YELLOW 26
 #define LED_RED 27
 #define BUZZER 32
-#define TOUCH_BUTTON 33 
+#define TOUCH_BUTTON 33 // Touch button on GPIO 33
 
 // Buzzer settings
 #define BUZZER_CHANNEL 0
@@ -38,9 +38,17 @@ void setup()
     Serial.println("Initializing system...");
 
     // Startup sequence: Red -> Red-Yellow -> Green
-    Serial.println("RED light ON (10s)...");
+    Serial.println("RED light ON (10s) with buzzer...");
     digitalWrite(LED_RED, HIGH);
-    delay(10000);
+    unsigned long redStartTime = millis();
+    while (millis() - redStartTime < 10000)
+    {
+        // Buzzer pattern for red: 250ms on, 250ms off
+        ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_RED);
+        delay(250);
+        ledcWriteTone(BUZZER_CHANNEL, 0);
+        delay(250);
+    }
 
     Serial.println("RED-YELLOW light ON (2s)...");
     digitalWrite(LED_YELLOW, HIGH);
@@ -58,29 +66,41 @@ void loop()
     bool buttonActivated = false;
     unsigned long buttonPressTime = 0;
 
-    
     while (true)
     {
-        // Buzzer pattern for green: 500ms on, 1500ms off
-        ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_GREEN);
-        delay(500);
-        ledcWriteTone(BUZZER_CHANNEL, 0);
-        delay(1500);
-
-        // Check if button is pressed (active low)
-        if (!buttonActivated && digitalRead(TOUCH_BUTTON) == LOW)
+        unsigned long cycleStart = millis();
+        while (millis() - cycleStart < 2000)
         {
-            buttonActivated = true;
-            buttonPressTime = millis();
-            Serial.println("Pedestrian button pressed!");
-        }
+            if (millis() - cycleStart < 500)
+            {
+                ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_GREEN);
+            }
+            else
+            {
+                ledcWriteTone(BUZZER_CHANNEL, 0);
+            }
 
-        // If button has been pressed, and 5 seconds have passed since then, exit loop
+            if (!buttonActivated && digitalRead(TOUCH_BUTTON) == LOW)
+            {
+                buttonActivated = true;
+                buttonPressTime = millis();
+                Serial.println("Pedestrian button pressed!");
+            }
+
+            if (buttonActivated && (millis() - buttonPressTime >= 5000))
+            {
+                break;
+            }
+            delay(50);
+        }
         if (buttonActivated && (millis() - buttonPressTime >= 5000))
         {
             break;
         }
     }
+
+    // Turn off buzzer before switching to YELLOW
+    ledcWriteTone(BUZZER_CHANNEL, 0);
 
     // Change to YELLOW (2s)
     Serial.println("Switching to YELLOW...");
