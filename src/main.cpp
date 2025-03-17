@@ -5,7 +5,7 @@
 #define LED_YELLOW 26
 #define LED_RED 27
 #define BUZZER 32
-#define TOUCH_BUTTON 33 // Touch button on GPIO 33
+#define TOUCH_BUTTON 33 
 
 // Buzzer settings
 #define BUZZER_CHANNEL 0
@@ -15,7 +15,8 @@
 
 bool pedestrianRequest = false;
 
-void setup() {
+void setup()
+{
     Serial.begin(115200);
 
     // Configure pins
@@ -23,7 +24,7 @@ void setup() {
     pinMode(LED_YELLOW, OUTPUT);
     pinMode(LED_RED, OUTPUT);
     pinMode(BUZZER, OUTPUT);
-    pinMode(TOUCH_BUTTON, INPUT_PULLUP); // Use internal pull-up
+    pinMode(TOUCH_BUTTON, INPUT_PULLUP); 
 
     // Ensure LEDs start off
     digitalWrite(LED_GREEN, LOW);
@@ -51,15 +52,15 @@ void setup() {
     digitalWrite(LED_GREEN, HIGH);
 }
 
-void loop() {
+void loop()
+{
     Serial.println("GREEN light active. Waiting for pedestrian...");
     bool buttonActivated = false;
     unsigned long buttonPressTime = 0;
 
-    // En estado verde, se repite el patrón del buzzer
-    // Se queda en verde indefinidamente hasta que se presione el botón.
-    // Una vez presionado, se espera al menos 5 segundos antes de cambiar de estado.
-    while (true) {
+    
+    while (true)
+    {
         // Buzzer pattern for green: 500ms on, 1500ms off
         ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_GREEN);
         delay(500);
@@ -67,14 +68,16 @@ void loop() {
         delay(1500);
 
         // Check if button is pressed (active low)
-        if (!buttonActivated && digitalRead(TOUCH_BUTTON) == LOW) {
+        if (!buttonActivated && digitalRead(TOUCH_BUTTON) == LOW)
+        {
             buttonActivated = true;
             buttonPressTime = millis();
             Serial.println("Pedestrian button pressed!");
         }
 
         // If button has been pressed, and 5 seconds have passed since then, exit loop
-        if (buttonActivated && (millis() - buttonPressTime >= 5000)) {
+        if (buttonActivated && (millis() - buttonPressTime >= 5000))
+        {
             break;
         }
     }
@@ -92,7 +95,8 @@ void loop() {
     unsigned long redStartTime = millis();
 
     // Buzzer pattern for red: 250ms on, 250ms off for 10 seconds
-    while (millis() - redStartTime < 10000) {
+    while (millis() - redStartTime < 10000)
+    {
         ledcWriteTone(BUZZER_CHANNEL, BUZZER_FREQUENCY_RED);
         delay(250);
         ledcWriteTone(BUZZER_CHANNEL, 0);
